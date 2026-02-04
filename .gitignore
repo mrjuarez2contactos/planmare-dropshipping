@@ -1,0 +1,18 @@
+```
+# Claves secretas - NUNCA subir a GitHub
+.env
+.env.local
+.env*.local
+
+# Dependencies
+node_modules/
+.next/
+
+# Production
+build/
+dist/
+
+# Misc
+.DS_Store
+*.log
+```
