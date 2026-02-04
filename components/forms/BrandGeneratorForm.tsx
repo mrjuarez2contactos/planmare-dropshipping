@@ -54,7 +54,7 @@ export const BrandGeneratorForm = () => {
             if (error) throw error
 
             toast.success(`Marca "${name}" guardada con éxito`)
-            router.push('/projects')
+            router.push('/dashboard')
         } catch (err) {
             toast.error('Error al guardar la marca')
         }

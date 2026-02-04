@@ -84,18 +84,18 @@ export const ProductSearchForm = () => {
             if (projectsError) throw projectsError
             if (!projects || projects.length === 0) return toast.error('Crea un proyecto/marca primero')
 
-            const { error } = await supabase.from('products').insert({
+            const { data: newProduct, error } = await supabase.from('products').insert({
                 project_id: projects[0].id,
                 product_name: product.name,
                 cost_price: product.cost,
                 sell_price: product.sell,
                 image_url: product.image,
-            })
+            }).select().single()
 
             if (error) throw error
 
             toast.success(`Producto "${product.name}" añadido al proyecto`)
-            router.push('/dashboard')
+            router.push(`/products/${newProduct.id}`)
         } catch (err) {
             toast.error('Error al guardar el producto')
         }

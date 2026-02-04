@@ -74,13 +74,15 @@ export default async function DashboardPage() {
                                     {project.products?.length || 0} Productos
                                 </div>
                             </CardContent>
-                            <div className="p-4 pt-0 flex gap-2">
-                                <Link href="/products" className="flex-1">
-                                    <Button variant="outline" className="w-full">Gestionar</Button>
+                            <div className="p-4 pt-0 flex flex-col gap-2">
+                                <Link href={`/products?projectId=${project.id}`} className="w-full">
+                                    <Button variant="outline" className="w-full">Agregar Producto</Button>
                                 </Link>
-                                <Link href="/preview">
-                                    <Button variant="secondary">Preview LP</Button>
-                                </Link>
+                                {project.products && project.products.length > 0 && (
+                                    <Link href={`/products/${project.products[0].id}`} className="w-full">
+                                        <Button variant="secondary" className="w-full">Editar Copy y Landing</Button>
+                                    </Link>
+                                )}
                             </div>
                         </Card>
                     ))}
