@@ -13,22 +13,15 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 interface Product {
     id: string
-    title: string
-    description: string
+    name: string
     price: number
-    cost: number
     image: string
-    images: string[]
-    category: string
-    sku: string
-    supplier: string
-    shippingInfo: {
-        isFreeShipping: boolean
-        deliveryTime: string
-    }
-    profit: string
-    rating: number
-    sales: number
+    description: string
+    variants?: Array<{
+        id: string
+        name: string
+        price: number
+    }>
 }
 
 export const ProductSearchForm = () => {
@@ -38,56 +31,28 @@ export const ProductSearchForm = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch] = useDebounce(searchTerm, 500)
     const [products, setProducts] = useState<Product[]>([])
-    const [categories, setCategories] = useState<any[]>([])
-    const [selectedCategory, setSelectedCategory] = useState('all')
     const [loading, setLoading] = useState(false)
     const [page, setPage] = useState(1)
     const [total, setTotal] = useState(0)
-    const [hasMore, setHasMore] = useState(false)
+    const [totalPages, setTotalPages] = useState(1)
 
     const supabase = createClient()
     const router = useRouter()
 
     useEffect(() => {
-        fetchCategories()
-    }, [])
+        searchProducts(debouncedSearch, page)
+    }, [debouncedSearch, page])
 
-    useEffect(() => {
-        searchProducts(debouncedSearch, selectedCategory, page)
-    }, [debouncedSearch, selectedCategory, page])
-
-    const fetchCategories = async () => {
-        try {
-            const resp = await fetch('/api/cj/categories')
-            const data = await resp.json()
-            if (data.success) {
-                setCategories(data.categories)
-            }
-        } catch (err) {
-            console.error('Error fetching categories:', err)
-        }
-    }
-
-    const searchProducts = async (keyword: string, categoryId: string, pageNum: number) => {
+    const searchProducts = async (keyword: string, pageNum: number) => {
         setLoading(true)
         try {
-            const response = await fetch('/api/cj/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    keyword,
-                    categoryId: categoryId === 'all' ? '' : categoryId,
-                    pageNum,
-                    pageSize: 12,
-                }),
-            })
-
+            const response = await fetch(`/api/products?search=${encodeURIComponent(keyword)}&page=${pageNum}&limit=12`)
             const data = await response.json()
 
             if (data.success) {
-                setProducts(data.products)
-                setTotal(data.total)
-                setHasMore(data.hasMore)
+                setProducts(data.products || [])
+                setTotal(data.total || 0)
+                setTotalPages(data.totalPages || 1)
             } else {
                 toast.error(data.error || 'Error al buscar productos')
                 setProducts([])
@@ -119,17 +84,18 @@ export const ProductSearchForm = () => {
                 projectId = projects[0].id
             }
 
+            // Mapeo a la tabla de productos de Supabase
             const { data: newProduct, error } = await supabase.from('products').insert({
                 project_id: projectId,
-                product_name: product.title,
-                cost_price: product.cost,
+                product_name: product.name,
+                cost_price: product.price * 0.7, // Precio estimado de costo (Eprolo price es venta?)
                 sell_price: product.price,
                 image_url: product.image,
             }).select().single()
 
             if (error) throw error
 
-            toast.success(`Producto "${product.title}" añadido al proyecto`)
+            toast.success(`Producto "${product.name}" añadido al proyecto`)
             router.push(`/products/${newProduct.id}`)
         } catch (err) {
             toast.error('Error al guardar el producto')
@@ -141,10 +107,10 @@ export const ProductSearchForm = () => {
             <Card className="shadow-sm">
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="md:col-span-2 relative">
+                        <div className="md:col-span-3 relative">
                             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Buscar productos ganadores (e.g. 'phone', 'pet')..."
+                                placeholder="Buscar productos ganadores en EPROLO..."
                                 className="pl-10"
                                 value={searchTerm}
                                 onChange={(e) => {
@@ -153,22 +119,6 @@ export const ProductSearchForm = () => {
                                 }}
                             />
                         </div>
-                        <Select value={selectedCategory} onValueChange={(val) => {
-                            setSelectedCategory(val)
-                            setPage(1)
-                        }}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Todas las categorías" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-[300px]">
-                                <SelectItem value="all">Todas las categorías</SelectItem>
-                                {categories.map((cat: any) => (
-                                    <SelectItem key={cat.categoryId} value={cat.categoryId}>
-                                        {cat.categoryName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                         <div className="flex items-center justify-end gap-2">
                             <Button
                                 variant="outline"
@@ -178,11 +128,11 @@ export const ProductSearchForm = () => {
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
-                            <span className="text-sm font-medium">Página {page}</span>
+                            <span className="text-sm font-medium">Página {page} de {totalPages}</span>
                             <Button
                                 variant="outline"
                                 size="icon"
-                                disabled={!hasMore || loading}
+                                disabled={page >= totalPages || loading}
                                 onClick={() => setPage(p => p + 1)}
                             >
                                 <ChevronRight className="h-4 w-4" />
@@ -224,34 +174,28 @@ export const ProductSearchForm = () => {
                             <div className="aspect-square relative overflow-hidden bg-slate-100">
                                 <img
                                     src={product.image}
-                                    alt={product.title}
+                                    alt={product.name}
                                     className="object-cover w-full h-full group-hover:scale-110 transition duration-500"
                                     loading="lazy"
                                 />
-                                {product.shippingInfo.isFreeShipping && (
-                                    <div className="absolute top-2 right-2 bg-yellow-400 text-black text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                                        <Truck className="h-3 w-3" />
-                                        FREE SHIPPING
-                                    </div>
-                                )}
                             </div>
                             <CardHeader className="p-4 flex-1">
                                 <div className="text-[10px] text-primary font-bold mb-1 uppercase tracking-[0.2em]">
-                                    {product.category}
+                                    EPROLO
                                 </div>
                                 <CardTitle className="text-sm font-bold leading-tight line-clamp-2 min-h-[2.5rem]">
-                                    {product.title}
+                                    {product.name}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 pt-0">
                                 <div className="flex justify-between items-end border-t pt-4 border-slate-50">
                                     <div className="space-y-0.5">
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold">Venta Sugerida</p>
+                                        <p className="text-[10px] text-slate-400 uppercase font-bold">Precio sugerido</p>
                                         <p className="text-2xl font-black text-slate-900">${product.price}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] text-green-600 font-bold uppercase">Profit</p>
-                                        <p className="text-sm font-black text-green-600">+${product.profit}</p>
+                                        <p className="text-[10px] text-green-600 font-bold uppercase">Envío</p>
+                                        <p className="text-sm font-black text-green-600">Global</p>
                                     </div>
                                 </div>
                             </CardContent>
