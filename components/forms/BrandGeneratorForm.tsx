@@ -28,12 +28,16 @@ export const BrandGeneratorForm = () => {
                 body: JSON.stringify({ niche })
             })
 
-            if (!resp.ok) throw new Error('Error al generar nombres')
-
             const data = await resp.json()
+
+            if (!resp.ok) {
+                throw new Error(data.error || 'Error al generar nombres')
+            }
+
             setResults(data.names || [])
-        } catch (err) {
-            toast.error('Hubo un problema al conectar con la IA')
+            toast.success('¡Nombres generados!')
+        } catch (err: any) {
+            toast.error(err.message || 'Hubo un problema al conectar con la IA')
         } finally {
             setLoading(false)
         }
@@ -41,6 +45,7 @@ export const BrandGeneratorForm = () => {
 
     const selectBrand = async (name: string) => {
         try {
+            setLoading(true) // Re-use loading for selection transition
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return toast.error('Debes iniciar sesión')
 
@@ -53,10 +58,15 @@ export const BrandGeneratorForm = () => {
 
             if (error) throw error
 
-            toast.success(`Marca "${name}" guardada con éxito`)
-            router.push('/dashboard')
+            toast.success(`Marca "${name}" guardada con éxito. Redirigiendo...`)
+
+            // Artificial delay for better UX
+            setTimeout(() => {
+                router.push('/dashboard')
+            }, 1000)
         } catch (err) {
             toast.error('Error al guardar la marca')
+            setLoading(false)
         }
     }
 

@@ -14,11 +14,11 @@ export async function POST(req: Request) {
         const { productName } = await req.json()
 
         if (!productName) {
-            return new NextResponse('Product name is required', { status: 400 })
+            return NextResponse.json({ error: 'El nombre del producto es obligatorio' }, { status: 400 })
         }
 
         const response = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
@@ -40,12 +40,13 @@ export async function POST(req: Request) {
         })
 
         const content = response.choices[0].message.content
-        if (!content) throw new Error('No content received from OpenAI')
+        if (!content) throw new Error('No se recibió contenido de OpenAI')
 
         const result = JSON.parse(content)
         return NextResponse.json(result)
-    } catch (error) {
+    } catch (error: any) {
         console.error('[GENERATE_COPY_ERROR]', error)
-        return new NextResponse('Internal Error', { status: 500 })
+        const message = error?.message || 'Error interno del servidor'
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }

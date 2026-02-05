@@ -65,13 +65,16 @@ export const CopyEditor = ({ productId }: { productId: string }) => {
                 body: JSON.stringify({ productName: product.product_name })
             })
 
-            if (!resp.ok) throw new Error('Error al generar copy')
-
             const data = await resp.json()
+
+            if (!resp.ok) {
+                throw new Error(data.error || 'Error al generar copy')
+            }
+
             setCopy(data)
             toast.success('Copy generado con éxito')
-        } catch (err) {
-            toast.error('Error al generar el copy con IA')
+        } catch (err: any) {
+            toast.error(err.message || 'Error al generar el copy con IA')
         } finally {
             setGenerating(false)
         }

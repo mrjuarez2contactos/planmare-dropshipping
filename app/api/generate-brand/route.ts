@@ -14,11 +14,11 @@ export async function POST(req: Request) {
         const { niche } = await req.json()
 
         if (!niche) {
-            return new NextResponse('Niche is required', { status: 400 })
+            return NextResponse.json({ error: 'El nicho es obligatorio' }, { status: 400 })
         }
 
         const response = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
@@ -33,12 +33,13 @@ export async function POST(req: Request) {
         })
 
         const content = response.choices[0].message.content
-        if (!content) throw new Error('No content received from OpenAI')
+        if (!content) throw new Error('No se recibió contenido de OpenAI')
 
         const result = JSON.parse(content)
         return NextResponse.json(result)
-    } catch (error) {
+    } catch (error: any) {
         console.error('[GENERATE_BRAND_ERROR]', error)
-        return new NextResponse('Internal Error', { status: 500 })
+        const message = error?.message || 'Error interno del servidor'
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }
