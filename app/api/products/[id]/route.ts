@@ -17,7 +17,7 @@ export async function GET(
             product
         });
     } catch (error: any) {
-        console.error(`[API_PRODUCT_DETAIL_ERROR] ID: ${params.id}`, error);
+        console.error(`[API_PRODUCT_DETAIL_ERROR] ID: ${id}`, error);
         return NextResponse.json(
             { success: false, error: error.message || 'Error al obtener detalles del producto' },
             { status: 500 }
