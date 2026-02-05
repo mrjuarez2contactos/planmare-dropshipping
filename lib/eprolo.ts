@@ -70,6 +70,8 @@ class EproloClient {
 
         // Nota: Aunque el prompt sugiere GET, verificamos el endpoint de búsqueda
         const data = await this.request(`/products/search?${params.toString()}`);
+            console.log('[EPROLO_SEARCH_RESPONSE]', JSON.stringify(data, null, 2));
+            console.log('[EPROLO_SEARCH_RAW]', data);
 
         // Transformación para mantener compatibilidad con la interfaz de PlanMARE
         return {
